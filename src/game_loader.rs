@@ -11,16 +11,16 @@ const GAMES_CONF_TOML: &str = "games.toml";
 #[derive(Default)]
 #[derive(Deserialize)]
 pub struct GameInfo {
-    path: String,
+    pub path: String,
 
     #[serde(default)]
-    arguments: Vec<String>,
+    pub arguments: Vec<String>,
 
     #[serde(default)]
-    env_variables: Vec<(String, String)>,
+    pub env_variables: Vec<(String, String)>,
 
     #[serde(default)]
-    name: String,
+    pub name: String,
 
 }
 
@@ -115,23 +115,6 @@ fn parse_games_txt() -> Vec<GameInfo> {
     return vec;
 }
 
-pub fn display_games(games: &[GameInfo]) {
-    for (i, game) in games.iter().enumerate() {
-        // Fallback to path if name is empty
-        let display_name = if game.name.is_empty() {
-            &game.path
-        } else {
-            &game.name
-        };
-
-        if game.arguments.is_empty() {
-            println!("{i}. {display_name}");
-        } else {
-            println!("{i}. {display_name}");
-            // println!("{i}. {display_name} (arguments: {})", game.arguments.join(" "));
-        }
-    }
-}
 
 
 fn split_args(input: &str) -> Vec<String> {

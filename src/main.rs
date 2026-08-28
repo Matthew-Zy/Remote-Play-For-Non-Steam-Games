@@ -1,20 +1,58 @@
 use std::process;
 use std::io;
 use std::io::{Write, Read};
+use std::env; 
 mod game_loader;
+mod tui;
+
+use game_loader::GameInfo;
+
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+    println!("{:#?}", args);
+
+    let use_cli = args.contains(&String::from("-cli"));
+
+
+    let games = game_loader::parse_games();
+
+    if use_cli {
+        run_cli(&games);
+    } else {
+        let _ = tui::run_tui(&games);
+    }
+}
+
+
 
 const INTRO_HEADER: &str = "
 -------------------------
 |   Steam Remote Play   |
 -------------------------";
-
-fn main() {
-    game_loader::parse_games_toml();
-    let games = game_loader::parse_games();
+fn display_games(games: &[GameInfo]) {
     println!("{INTRO_HEADER}");
-    game_loader::display_games(&games);
+    
+    for (i, game) in games.iter().enumerate() {
+        // Fallback to path if name is empty
+        let display_name = if game.name.is_empty() {
+            &game.path
+        } else {
+            &game.name
+        };
+
+        if game.arguments.is_empty() {
+            println!("{i}. {display_name}");
+        } else {
+            println!("{i}. {display_name}");
+            // println!("{i}. {display_name} (arguments: {})", game.arguments.join(" "));
+        }
+    }
+}
+
+fn run_cli(games: &[GameInfo]) {
+    display_games(games);
     let mut input = String::new();
-    println!("Enter a game to play [0-{}]\nenter q or Q to quit.", games.len()-1);
+    println!("Enter a game to play 0-{} (inclusive)\nenter q or Q to quit.", games.len()-1);
     loop {
         input.clear();
         print!("> ");
@@ -48,5 +86,4 @@ fn main() {
             break;
         }
     }
-    
 }
