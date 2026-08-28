@@ -1,20 +1,38 @@
 use std::process::Command;
 use std::fs;
+use std::collections::HashMap;
+use std::path::Path;
+use serde::Deserialize;
 
-const GAMES_CONF: &str = "games.txt";
+const GAMES_CONF_TXT: &str = "games.txt";
+const GAMES_CONF_TOML: &str = "games.toml";
+
 #[derive(Debug)]
 #[derive(Default)]
+#[derive(Deserialize)]
 pub struct GameInfo {
     path: String,
+
+    #[serde(default)]
     arguments: Vec<String>,
+
+    #[serde(default)]
+    env_variables: Vec<(String, String)>,
+
+    #[serde(default)]
     name: String,
 
 }
 
 pub fn spawn_game(game: &GameInfo) -> bool {
-    println!("{:#?}", game);
-    let match_result = Command::new(&game.path)
+    println!("Game Launch Params:\n{:#?}", game);
+
+    let game_file = Path::new(&game.path);
+    let working_dir = game_file.parent().unwrap_or_else(|| Path::new("."));
+    let match_result = Command::new(game_file)
         .args(&game.arguments)
+        .envs(game.env_variables.clone())
+        .current_dir(working_dir)
         .spawn();
     
     match match_result {
@@ -30,8 +48,39 @@ pub fn spawn_game(game: &GameInfo) -> bool {
     }
 }
 
+
 pub fn parse_games() -> Vec<GameInfo> {
-    let content = fs::read_to_string(GAMES_CONF)
+    match fs::read_to_string(GAMES_CONF_TXT) {
+        Ok(_) => return parse_games_txt(), // File exists and is readable
+        
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            if Path::new(GAMES_CONF_TOML).exists() {
+                return parse_games_toml()
+            } else {
+                panic!("No file {GAMES_CONF_TXT} or {GAMES_CONF_TOML} was found");
+            }
+        }
+        
+        Err(e) => panic!("Error reading {GAMES_CONF_TXT}: {e}"),
+    }
+}
+
+
+pub fn parse_games_toml() -> Vec<GameInfo> {
+    let toml_str = fs::read_to_string(GAMES_CONF_TOML).unwrap();
+
+    let mut map: HashMap<String, Vec<GameInfo>> = toml::from_str(&toml_str).unwrap();
+    
+    // Extract the vector directly from the map
+    let games: Vec<GameInfo> = map.remove("game").unwrap_or_default();
+
+    println!("{:#?}", games);
+
+    return games;
+}
+
+fn parse_games_txt() -> Vec<GameInfo> {
+    let content = fs::read_to_string(GAMES_CONF_TXT)
         .expect("Should have been able to read the file");
     let games_list: Vec<&str> = content.split("\n").collect();
 

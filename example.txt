@@ -1,6 +1,10 @@
-"C:\tools\Dolphin\Dolphin.exe" -b -e "D:\Games\New Super Mario Bros. Wii (USA) (En,Fr,Es) (Rev 2).wbfs" | New Super Mario Bros. Wii
+# it even supports comments! (prefixed with a #). 
+# remember to rename as 'games.txt'
+
+C:\tools\Dolphin\Dolphin.exe" -b -e "D:\Games\New Super Mario Bros. Wii (USA) (En,Fr,Es) (Rev 2).wbfs" | New Super Mario Bros. Wii
 "C:\tools\Dolphin\Dolphin.exe" -b -e "D:\Games\Legend of Zelda, The - Twilight Princess (Europe, Australia) (En,Fr,De,Es,It).wbfs" | Legend Of Zelda - Twilight Princess
 "C:\path\to\executable.exe" | Custom Game Name
-# it even supports comments! (prefixed with a #). 
+
 # Please avoid using tilde expansion (~\path)
+
 "C:\Users\user\scoop\apps\ryujinx\current\Ryujinx.exe" | Ryujinx

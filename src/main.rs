@@ -9,9 +9,8 @@ const INTRO_HEADER: &str = "
 -------------------------";
 
 fn main() {
-
+    game_loader::parse_games_toml();
     let games = game_loader::parse_games();
-    // println!("{:#?}", x);
     println!("{INTRO_HEADER}");
     game_loader::display_games(&games);
     let mut input = String::new();
