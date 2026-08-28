@@ -8,3 +8,7 @@ name = "remote-play"
 path = "src/main.rs"
 
 [dependencies]
+
+
+[build-dependencies]
+winres = "0.1"
