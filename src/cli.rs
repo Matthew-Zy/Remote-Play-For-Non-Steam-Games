@@ -1,7 +1,6 @@
 use std::process;
 use std::io;
 use std::io::{Read, Write};
-use std::process::Command;
 
 use crate::game_loader::GameInfo;
 use crate::game_loader;
@@ -73,13 +72,5 @@ pub fn run_cli(games: &[GameInfo]) {
                 }
             }
         }
-    }
-}
-
-fn clear_terminal() {
-    if cfg!(target_os = "windows") {
-        Command::new("cls").status().unwrap();
-    } else {
-        Command::new("clear").status().unwrap();
     }
 }
