@@ -3,13 +3,15 @@ mod game_loader;
 mod tui;
 mod cli; 
 
-
+#[cfg(target_os = "linux")]
 use std::io::{self, IsTerminal};
+#[cfg(target_os = "linux")]
 use std::process::{self, Command};
 
 fn main() {
 
-    if cfg!(target_os = "linux") {
+    #[cfg(target_os = "linux")]
+    {
         check_for_relaunch(); 
     }
 
