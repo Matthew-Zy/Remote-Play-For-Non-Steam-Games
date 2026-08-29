@@ -14,12 +14,19 @@ fn main() {
     let use_cli = args.contains(&String::from("-cli"));
 
 
-    let games = game_loader::parse_games();
+    let games = match game_loader::parse_games() {
+        Ok(value) => value,
+        Err(error) => {
+            println!("Error occured: {}", error);
+            let _ = io::stdin().read(&mut [0u8]);
+            panic!("Closing program")
+        },
+    };
 
     if use_cli {
         run_cli(&games);
     } else {
-        let _ = tui::run_tui(&games);
+        let _ = tui::run_tui(games);
     }
 }
 
@@ -77,13 +84,17 @@ fn run_cli(games: &[GameInfo]) {
         if num_input >= games.len() {
             println!("Please enter a number between 0 and {}", games.len()-1)
         } else {
-            let success: bool = game_loader::spawn_game(&games[num_input]);
-            if !success {
-                // don't exit immediately so the user can still see the error msg..
-                println!("Hit enter to continue");
-                let _ = io::stdin().read(&mut [0u8]);
+            println!("Game Launch Params:\n{:#?}", &games[num_input]);
+            match game_loader::spawn_game(&games[num_input]) {
+                Ok(_) => {
+                    break;
+                }
+                Err(e) => {
+                    println!("Error when opening application: {}", e);
+                    println!("Hit enter to continue");
+                    let _ = io::stdin().read(&mut [0u8]);
+                }
             }
-            break;
         }
     }
 }

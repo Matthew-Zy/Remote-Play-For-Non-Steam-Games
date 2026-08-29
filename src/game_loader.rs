@@ -24,8 +24,7 @@ pub struct GameInfo {
 
 }
 
-pub fn spawn_game(game: &GameInfo) -> bool {
-    println!("Game Launch Params:\n{:#?}", game);
+pub fn spawn_game(game: &GameInfo) -> Result<(), String> {
 
     let game_file = Path::new(&game.path);
     let working_dir = game_file.parent().unwrap_or_else(|| Path::new("."));
@@ -34,34 +33,31 @@ pub fn spawn_game(game: &GameInfo) -> bool {
         .envs(game.env_variables.clone())
         .current_dir(working_dir)
         .spawn();
-    
     match match_result {
         Ok(_) => {
-            println!("Successfully started application {}", game.path);
-            true
+            Ok(())
         }
         Err(e) => {
-            eprintln!("Error happened when starting application: {}", e);
-            eprintln!("Failed to start application: {}", game.path);
-            false
+
+            Err(e.to_string())
         }
     }
 }
 
 
-pub fn parse_games() -> Vec<GameInfo> {
+pub fn parse_games() -> Result<Vec<GameInfo>, String> {
     match fs::read_to_string(GAMES_CONF_TXT) {
-        Ok(_) => return parse_games_txt(), // File exists and is readable
+        Ok(_) => return Ok(parse_games_txt()), // File exists and is readable
         
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             if Path::new(GAMES_CONF_TOML).exists() {
-                return parse_games_toml()
+                return Ok(parse_games_toml())
             } else {
-                panic!("No file {GAMES_CONF_TXT} or {GAMES_CONF_TOML} was found");
+                Err(format!("No file {GAMES_CONF_TXT} or {GAMES_CONF_TOML} was found"))
             }
         }
         
-        Err(e) => panic!("Error reading {GAMES_CONF_TXT}: {e}"),
+        Err(e) => Err(format!("Error reading {GAMES_CONF_TXT}: {e}")),
     }
 }
 
