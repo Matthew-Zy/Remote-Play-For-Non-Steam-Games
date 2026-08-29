@@ -56,7 +56,7 @@ impl App {
             padded_titles: padded_titles,
             current_screen: CurrentScreen::SelectGame,
             index: 0,
-            error: String::from("Error"),
+            error: String::from(""),
             exit: false,
         }
     }
@@ -110,7 +110,7 @@ impl App {
     fn spawn_game(&mut self) {
         self.current_screen = CurrentScreen::LaunchGame;
         match game_loader::spawn_game(&self.games[self.index]) {
-            Ok(_) => self.exit(),
+            Ok(_) => {},//self.exit(),
             Err(e) => self.error = e,
         }
     }
@@ -220,15 +220,17 @@ impl App {
                 Line::from(formatted_line)
             })
             .collect();
-        
+
+        padded_lines.push(Line::from("\n"));
         if !self.error.is_empty() {
-            padded_lines.push(Line::from("\n"));
             let mut lines: Vec<Line> = self.error
                 .lines()
                 .map(|line| Line::from(line.red()))
                 .collect();
             
             padded_lines.append(&mut lines);
+        } else {
+            padded_lines.push(Line::from(format!("Sucessfully launched application: {}", &self.games[self.index].path)).green())
         }
 
         let disp_text = Text::from(padded_lines);
