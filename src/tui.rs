@@ -11,19 +11,28 @@ use ratatui::{
 
 use std::io;
 
-use crate::game_loader::{GameInfo};
 use crate::game_loader;
+use crate::game_loader::GameInfo;
+#[derive(Debug, Default)]
+pub enum CurrentScreen {
+    #[default]
+    SelectGame,
+    LaunchGame,
+    LoadError,
+}
 
 #[derive(Debug, Default)]
 pub struct App {
     games: Vec<GameInfo>,
     padded_titles: Vec<String>,
     index: usize,
+    current_screen: CurrentScreen,
+    error: String,
     exit: bool,
 }
 
 impl App {
-    pub fn create(games: Vec<GameInfo>) -> Self {
+    pub fn from(games: Vec<GameInfo>) -> Self {
         let titles: Vec<String> = games
             .iter()
             .map(|x| {
@@ -45,9 +54,21 @@ impl App {
         App {
             games: games,
             padded_titles: padded_titles,
+            current_screen: CurrentScreen::SelectGame,
             index: 0,
+            error: String::from("Error"),
             exit: false,
         }
+    }
+
+
+    pub fn error(mut self, error_msg: String) -> Self {
+        
+        self.error = error_msg;
+        if !self.error.is_empty() {
+            self.current_screen = CurrentScreen::LoadError;
+        }
+        self
     }
 
     /// runs the application's main loop until the user quits
@@ -87,9 +108,11 @@ impl App {
     }
 
     fn spawn_game(&mut self) {
-        let _ = game_loader::spawn_game(&self.games[self.index]);
-        self.exit();
-        // error handling eventually
+        self.current_screen = CurrentScreen::LaunchGame;
+        match game_loader::spawn_game(&self.games[self.index]) {
+            Ok(_) => self.exit(),
+            Err(e) => self.error = e,
+        }
     }
 
     fn exit(&mut self) {
@@ -109,11 +132,7 @@ impl App {
         }
     }
 
-
-}
-
-impl Widget for &App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render_select_game(&self, area: Rect, buf: &mut Buffer) {
         let title = Line::from(" Steam Remote Play ".bold());
         let instructions = Line::from(vec![
             " Decrement ".into(),
@@ -121,19 +140,14 @@ impl Widget for &App {
             " Increment ".into(),
             "<Up/W>".blue().bold(),
             " Quit ".into(),
-            "<Q>".blue().bold(),
+            "<Q/Esc>".blue().bold(),
             " Launch Game ".into(),
-            "<Enter/Space> ".blue().bold()
+            "<Enter/Space> ".blue().bold(),
         ]);
         let block = Block::bordered()
             .title(title.centered())
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
-
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
-            self.index.to_string().yellow(),
-        ])]);
 
         let items: Vec<ListItem> = self
             .padded_titles
@@ -174,8 +188,98 @@ impl Widget for &App {
         // 4. Render using render_stateful_widget directly to Buffer
         StatefulWidget::render(games_list, area, buf, &mut state);
     }
+
+    fn render_launch_game(&self, area: Rect, buf: &mut Buffer) {
+        let title = Line::from(" Game Launch Status ".bold());
+        let instructions = Line::from(vec![
+            " Quit ".into(),
+            "<Q/Esc> ".blue().bold(),
+        ]);
+        let block = Block::bordered().border_set(border::THICK)
+            .title(title.centered())
+            .title_bottom(instructions.centered())
+            .border_set(border::THICK);
+        
+
+        let debug_string = format!("{:#?}", &self.games[self.index]);
+        let lines: Vec<&str> = debug_string.lines().collect();
+        let total_lines = lines.len();
+        let max_width = lines.iter().map(|line| line.len()).max().unwrap_or(0);
+
+        let mut padded_lines: Vec<Line> = lines
+            .into_iter()
+            .enumerate()
+            .map(|(i, line)| {
+
+                let left_pad = if i == 0 || i == total_lines-1 { "" } else { "    " };
+
+                let right_pad_len = max_width.saturating_sub(line.len());
+                let right_pad = " ".repeat(right_pad_len);
+
+                let formatted_line = format!("{}{}{}", left_pad, line, right_pad);
+                Line::from(formatted_line)
+            })
+            .collect();
+        
+        if !self.error.is_empty() {
+            padded_lines.push(Line::from("\n"));
+            let mut lines: Vec<Line> = self.error
+                .lines()
+                .map(|line| Line::from(line.red()))
+                .collect();
+            
+            padded_lines.append(&mut lines);
+        }
+
+        let disp_text = Text::from(padded_lines);
+        Paragraph::new(disp_text)
+            .centered()
+            .block(block)
+            .render(area, buf);
+    }
+
+    fn render_load_error(&self, area: Rect, buf: &mut Buffer) {
+        let title = Line::from(" Error when loading games ".bold());
+        let instructions = Line::from(vec![
+            " Quit ".into(),
+            "<Q/Esc> ".blue().bold(),
+        ]);
+        let block = Block::bordered().border_set(border::THICK)
+            .title(title.centered())
+            .title_bottom(instructions.centered())
+            .border_set(border::THICK);
+
+        let mut lines: Vec<Line> = self.error
+            .lines()
+            .map(|line| Line::from(line.red()))
+            .collect();
+        
+        lines.insert(0, Line::from("\n"));
+        Paragraph::new(lines)
+            .centered()
+            .block(block)
+            .render(area, buf);
+    }
 }
 
-pub fn run_tui(games: Vec<GameInfo>) -> Result<(), std::io::Error> {
-    ratatui::run(|terminal| App::create(games).run(terminal))
+impl Widget for &App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        match self.current_screen {
+            CurrentScreen::SelectGame => self.render_select_game(area, buf),
+            CurrentScreen::LaunchGame => self.render_launch_game(area, buf),
+            CurrentScreen::LoadError => self.render_load_error(area, buf),
+        }
+    }
+}
+
+pub fn run_tui() -> Result<(), std::io::Error> {
+    
+    match game_loader::parse_games() {
+        Ok(games) => {
+            ratatui::run(|terminal| App::from(games).run(terminal))
+        }
+        Err(e) => {
+            ratatui::run(|terminal| App::default().error(e).run(terminal))
+        },
+    }
 }
