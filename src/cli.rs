@@ -24,8 +24,19 @@ fn display_games(games: &[GameInfo]) {
     }
 }
 
-pub fn run_cli(games: &[GameInfo]) {
-    display_games(games);
+pub fn run_cli() {
+    let games = match game_loader::parse_games() {
+        Ok(value) => value,
+        Err(error) => {
+            println!("Error occured: {}", error);
+            println!("Hit enter to exit program");
+            let _ = io::stdin().read(&mut [0u8]);
+            process::exit(0);
+            
+        },
+    };
+
+    display_games(&games);
     println!("Enter a game to play 0-{} (inclusive)\nEnter q to quit.", games.len()-1);
     let mut input = String::new();
     loop {
@@ -43,7 +54,7 @@ pub fn run_cli(games: &[GameInfo]) {
             // clear screen, scroll and reset cursor to top left.
             print!("\x1b[2J\x1b[3J\x1b[H");
             io::stdout().flush().unwrap();
-            display_games(games);
+            display_games(&games);
             println!("Enter a game to play 0-{} (inclusive)\nEnter q to quit or c to clear & reprint the terminal", games.len()-1);
             continue;
         }
@@ -67,8 +78,9 @@ pub fn run_cli(games: &[GameInfo]) {
                 }
                 Err(e) => {
                     println!("Error when opening application: {}", e);
-                    println!("Hit enter to continue");
+                    println!("Hit enter to exit program");
                     let _ = io::stdin().read(&mut [0u8]);
+                    break;
                 }
             }
         }

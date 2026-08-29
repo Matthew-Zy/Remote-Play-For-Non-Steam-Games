@@ -38,8 +38,8 @@ pub fn spawn_game(game: &GameInfo) -> Result<(), String> {
             Ok(())
         }
         Err(e) => {
-
-            Err(e.to_string())
+            let error_msg = format!("Error running application: {}\n{}", game.path, e.to_string());
+            Err(error_msg)
         }
     }
 }
@@ -53,7 +53,7 @@ pub fn parse_games() -> Result<Vec<GameInfo>, String> {
             if Path::new(GAMES_CONF_TOML).exists() {
                 return Ok(parse_games_toml())
             } else {
-                Err(format!("No file {GAMES_CONF_TXT} or {GAMES_CONF_TOML} was found"))
+                Err(format!("No file {GAMES_CONF_TXT} or {GAMES_CONF_TOML} file was found.\nPlease Ensure a {GAMES_CONF_TXT} or {GAMES_CONF_TOML} exists and are placed in the same directory as this executable."))
             }
         }
         
