@@ -22,7 +22,7 @@ name = "remote-play"
 product_name = "Remote Play For Non Steam Games"
 version = "0.1.0"
 identifier = ""
-icons = ["icon.png"] # Path to your app icon
+icons = ["assets/icon.png"]
 authors = ["Matthew-Zy"]
 description = "Application to help use remote play with non steam games"
 
