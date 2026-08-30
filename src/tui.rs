@@ -26,6 +26,7 @@ pub struct App {
     games: Vec<GameInfo>,
     padded_titles: Vec<String>,
     index: usize,
+    input_buf: String,
     current_screen: CurrentScreen,
     error: String,
     exit: bool,
@@ -55,6 +56,7 @@ impl App {
             games: games,
             padded_titles: padded_titles,
             current_screen: CurrentScreen::SelectGame,
+            input_buf: String::from(""), 
             index: 0,
             error: String::from(""),
             exit: false,
@@ -100,9 +102,27 @@ impl App {
         match key_event.code {
             // don't worry capslocks users I gotchu
             KeyCode::Esc | KeyCode::Char('q' | 'Q') => self.exit(),
-            KeyCode::Up | KeyCode::Char('w' | 'W') => self.decrement_index(),
-            KeyCode::Down | KeyCode::Char('s' | 'S') => self.increment_index(),
-            KeyCode::Enter | KeyCode::Char(' ') => self.spawn_game(),
+            _ => {}
+        }
+
+        match self.current_screen  {
+            CurrentScreen::SelectGame => {
+                match key_event.code {
+                    KeyCode::Up | KeyCode::Char('w' | 'W') => self.decrement_index(),
+                    KeyCode::Down | KeyCode::Char('s' | 'S') => self.increment_index(),
+                    KeyCode::Enter | KeyCode::Char(' ') => self.spawn_game(),
+                    KeyCode::Char(c) if c.is_ascii_digit() => {
+                        // realistically nobody is having more than 1000 games right?
+                        if self.input_buf.len() < 3 {
+                            self.input_buf.push(c);
+                        }
+                        self.update_index()
+                    }
+                    KeyCode::Backspace => {self.input_buf.pop(); self.update_index()},
+
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }
@@ -112,6 +132,17 @@ impl App {
         match game_loader::spawn_game(&self.games[self.index]) {
             Ok(_) => {},//self.exit(),
             Err(e) => self.error = e,
+        }
+    }
+
+    fn update_index(&mut self) {
+        if let Ok(number) = self.input_buf.parse::<usize>() {
+            if self.games.len() > number {
+                self.index = number;
+            } else {
+                self.index = self.games.len() - 1;
+                self.input_buf = (self.games.len() - 1).to_string();
+            }
         }
     }
 
@@ -149,23 +180,22 @@ impl App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let items: Vec<ListItem> = self
+        let mut items: Vec<ListItem> = self
             .padded_titles
             .iter()
             .enumerate()
-            .map(|(i, x)| {
-                let name = x;
-                let index_str = format!("{i}. ");
+            .map(|(i, name)| {
+                let left_space_padding = count_digits(self.games.len()-1);
+                let index_str = format!("{:width$}. ", i, width = left_space_padding);
 
                 let is_selected = i == self.index;
                 let suffix = if is_selected { " <" } else { "  " };
                 let prefix = if is_selected { "> " } else { "  " };
-                // 2. Build line with optional right-hand symbol
                 let line = Line::from(vec![
                     prefix.yellow().bold(),
                     index_str.into(),
                     name.as_str().into(),
-                    suffix.yellow().bold(), // End pointer symbol
+                    suffix.yellow().bold(), 
                 ])
                 .alignment(Alignment::Center);
 
@@ -173,19 +203,25 @@ impl App {
             })
             .collect();
 
+        // this has to be a war crime
+        items.push(ListItem::new(
+            Line::from(
+                format!("{} {:<width$}", if self.input_buf.is_empty() {""} else {">"}, self.input_buf, width = count_digits(self.games.len()-1))
+            ).centered()
+        ));
+
         let games_list = List::new(items)
             .block(block)
-            // Highlight current index
             .highlight_style(
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
             );
 
+
         let mut state = ListState::default();
         state.select(Some(self.index));
 
-        // 4. Render using render_stateful_widget directly to Buffer
         StatefulWidget::render(games_list, area, buf, &mut state);
     }
 
@@ -284,4 +320,16 @@ pub fn run_tui() -> Result<(), std::io::Error> {
             ratatui::run(|terminal| App::default().error(e).run(terminal))
         },
     }
+}
+
+
+
+
+
+// ok guys math is hard
+fn count_digits(n: usize) -> usize {
+    if n == 0 {
+        return 1;
+    }
+    (n.ilog10() + 1) as usize
 }
