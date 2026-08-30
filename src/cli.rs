@@ -37,7 +37,7 @@ pub fn run_cli() {
     };
 
     display_games(&games);
-    println!("Enter a game to play 0-{} (inclusive)\nEnter q to quit.", games.len()-1);
+    println!("Enter a game to play 0-{} (inclusive)\nEnter q to quit or c to clear & reprint the terminal", games.len()-1);
     let mut input = String::new();
     loop {
         input.clear();
