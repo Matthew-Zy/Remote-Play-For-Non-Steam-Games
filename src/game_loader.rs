@@ -78,7 +78,7 @@ pub fn parse_games() -> Result<Vec<GameInfo>, String> {
         },
 
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            if Path::new(GAMES_CONF_TOML).exists() {
+            if Path::new(GAMES_CONF_TXT).exists() {
                 return Ok(parse_games_txt(GAMES_CONF_TXT));
             } else {
                 Err(format!(
