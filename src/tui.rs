@@ -1,4 +1,8 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use crossterm::execute;
+
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
@@ -9,6 +13,7 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
 };
 
+use std::cell::Cell;
 use std::io;
 
 use crate::game_loader;
@@ -25,6 +30,7 @@ pub enum CurrentScreen {
 pub struct App {
     games: Vec<GameInfo>,
     padded_titles: Vec<String>,
+    list_area: Cell<Rect>,
     index: usize,
     input_buf: String,
     current_screen: CurrentScreen,
@@ -55,17 +61,16 @@ impl App {
         App {
             games: games,
             padded_titles: padded_titles,
+            list_area: Cell::default(),
             current_screen: CurrentScreen::SelectGame,
-            input_buf: String::from(""), 
+            input_buf: String::from(""),
             index: 0,
             error: String::from(""),
             exit: false,
         }
     }
 
-
     pub fn error(mut self, error_msg: String) -> Self {
-        
         self.error = error_msg;
         if !self.error.is_empty() {
             self.current_screen = CurrentScreen::LoadError;
@@ -93,6 +98,9 @@ impl App {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event)
             }
+            Event::Mouse(mouse_event) => {
+                self.handle_mouse_event(mouse_event);
+            }
             _ => {}
         };
         Ok(())
@@ -105,7 +113,7 @@ impl App {
             _ => {}
         }
 
-        match self.current_screen  {
+        match self.current_screen {
             CurrentScreen::SelectGame => {
                 match key_event.code {
                     KeyCode::Up | KeyCode::Char('w' | 'W') => self.decrement_index(),
@@ -118,7 +126,10 @@ impl App {
                         }
                         self.update_index()
                     }
-                    KeyCode::Backspace => {self.input_buf.pop(); self.update_index()},
+                    KeyCode::Backspace => {
+                        self.input_buf.pop();
+                        self.update_index()
+                    }
 
                     _ => {}
                 }
@@ -127,10 +138,29 @@ impl App {
         }
     }
 
+    fn handle_mouse_event(&mut self, mouse_event: MouseEvent) {
+        match self.current_screen {
+            CurrentScreen::SelectGame => match mouse_event.kind {
+                MouseEventKind::Down(MouseButton::Left) => {
+                    let col = mouse_event.column;
+                    let row = mouse_event.row;
+                    let area = self.list_area.get();
+                    self.select_clicked_game(col, row, area);
+                }
+                MouseEventKind::ScrollDown => self.increment_index(),
+                MouseEventKind::ScrollUp => self.decrement_index(),
+                _ => {}
+            },
+            CurrentScreen::LaunchGame | CurrentScreen::LoadError => match mouse_event.kind {
+                MouseEventKind::Down(MouseButton::Left) => self.exit(),
+                _ => {}
+            }
+        }
+    }
     fn spawn_game(&mut self) {
         self.current_screen = CurrentScreen::LaunchGame;
         match game_loader::spawn_game(&self.games[self.index]) {
-            Ok(_) => {},//self.exit(),
+            Ok(_) => self.exit(),
             Err(e) => self.error = e,
         }
     }
@@ -142,6 +172,25 @@ impl App {
             } else {
                 self.index = self.games.len() - 1;
                 self.input_buf = (self.games.len() - 1).to_string();
+            }
+        }
+    }
+
+    fn select_clicked_game(&mut self, col: u16, row: u16, area: Rect) {
+        if area.is_empty() { return; }
+        if col < area.x || col >= area.x + area.width {
+            return;
+        }
+        if row <= area.y || row >= area.y + area.height - 1 {
+            return;
+        }
+        let local_row = row - area.y - 1;
+        let total_clickable_items = self.padded_titles.len();
+        if (local_row as usize) < total_clickable_items {
+            if self.index == local_row as usize {
+                self.spawn_game();
+            } else {
+                self.index = local_row as usize;
             }
         }
     }
@@ -164,6 +213,8 @@ impl App {
     }
 
     fn render_select_game(&self, area: Rect, buf: &mut Buffer) {
+        self.list_area.set(area);
+
         let title = Line::from(" Steam Remote Play ".bold());
         let instructions = Line::from(vec![
             " Decrement ".into(),
@@ -185,7 +236,7 @@ impl App {
             .iter()
             .enumerate()
             .map(|(i, name)| {
-                let left_space_padding = count_digits(self.games.len()-1);
+                let left_space_padding = count_digits(self.games.len() - 1);
                 let index_str = format!("{:width$}. ", i, width = left_space_padding);
 
                 let is_selected = i == self.index;
@@ -195,7 +246,7 @@ impl App {
                     prefix.yellow().bold(),
                     index_str.into(),
                     name.as_str().into(),
-                    suffix.yellow().bold(), 
+                    suffix.yellow().bold(),
                 ])
                 .alignment(Alignment::Center);
 
@@ -205,19 +256,20 @@ impl App {
 
         // this has to be a war crime
         items.push(ListItem::new(
-            Line::from(
-                format!("{} {:<width$}", if self.input_buf.is_empty() {""} else {">"}, self.input_buf, width = count_digits(self.games.len()-1))
-            ).centered()
+            Line::from(format!(
+                "{} {:<width$}",
+                if self.input_buf.is_empty() { "" } else { ">" },
+                self.input_buf,
+                width = count_digits(self.games.len() - 1)
+            ))
+            .centered(),
         ));
 
-        let games_list = List::new(items)
-            .block(block)
-            .highlight_style(
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            );
-
+        let games_list = List::new(items).block(block).highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        );
 
         let mut state = ListState::default();
         state.select(Some(self.index));
@@ -227,15 +279,12 @@ impl App {
 
     fn render_launch_game(&self, area: Rect, buf: &mut Buffer) {
         let title = Line::from(" Game Launch Status ".bold());
-        let instructions = Line::from(vec![
-            " Quit ".into(),
-            "<Q/Esc> ".blue().bold(),
-        ]);
-        let block = Block::bordered().border_set(border::THICK)
+        let instructions = Line::from(vec![" Quit ".into(), "<Q/Esc> ".blue().bold()]);
+        let block = Block::bordered()
+            .border_set(border::THICK)
             .title(title.centered())
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
-        
 
         let debug_string = format!("{:#?}", &self.games[self.index]);
         let lines: Vec<&str> = debug_string.lines().collect();
@@ -246,8 +295,11 @@ impl App {
             .into_iter()
             .enumerate()
             .map(|(i, line)| {
-
-                let left_pad = if i == 0 || i == total_lines-1 { "" } else { "    " };
+                let left_pad = if i == 0 || i == total_lines - 1 {
+                    ""
+                } else {
+                    "    "
+                };
 
                 let right_pad_len = max_width.saturating_sub(line.len());
                 let right_pad = " ".repeat(right_pad_len);
@@ -259,14 +311,21 @@ impl App {
 
         padded_lines.push(Line::from("\n"));
         if !self.error.is_empty() {
-            let mut lines: Vec<Line> = self.error
+            let mut lines: Vec<Line> = self
+                .error
                 .lines()
                 .map(|line| Line::from(line.red()))
                 .collect();
-            
+
             padded_lines.append(&mut lines);
         } else {
-            padded_lines.push(Line::from(format!("Sucessfully launched application: {}", &self.games[self.index].path)).green())
+            padded_lines.push(
+                Line::from(format!(
+                    "Sucessfully launched application: {}",
+                    &self.games[self.index].path
+                ))
+                .green(),
+            )
         }
 
         let disp_text = Text::from(padded_lines);
@@ -278,20 +337,19 @@ impl App {
 
     fn render_load_error(&self, area: Rect, buf: &mut Buffer) {
         let title = Line::from(" Error when loading games ".bold());
-        let instructions = Line::from(vec![
-            " Quit ".into(),
-            "<Q/Esc> ".blue().bold(),
-        ]);
-        let block = Block::bordered().border_set(border::THICK)
+        let instructions = Line::from(vec![" Quit ".into(), "<Q/Esc> ".blue().bold()]);
+        let block = Block::bordered()
+            .border_set(border::THICK)
             .title(title.centered())
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let mut lines: Vec<Line> = self.error
+        let mut lines: Vec<Line> = self
+            .error
             .lines()
             .map(|line| Line::from(line.red()))
             .collect();
-        
+
         lines.insert(0, Line::from("\n"));
         Paragraph::new(lines)
             .centered()
@@ -311,20 +369,14 @@ impl Widget for &App {
 }
 
 pub fn run_tui() -> Result<(), std::io::Error> {
-    
-    match game_loader::parse_games() {
-        Ok(games) => {
-            ratatui::run(|terminal| App::from(games).run(terminal))
-        }
-        Err(e) => {
-            ratatui::run(|terminal| App::default().error(e).run(terminal))
-        },
-    }
+    execute!(io::stdout(), EnableMouseCapture)?;
+    let result = match game_loader::parse_games() {
+        Ok(games) => ratatui::run(|terminal| App::from(games).run(terminal)),
+        Err(e) => ratatui::run(|terminal| App::default().error(e).run(terminal)),
+    };
+    execute!(io::stdout(), DisableMouseCapture)?;
+    return result;
 }
-
-
-
-
 
 // ok guys math is hard
 fn count_digits(n: usize) -> usize {
