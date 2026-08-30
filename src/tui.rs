@@ -152,7 +152,8 @@ impl App {
                 _ => {}
             },
             CurrentScreen::LaunchGame | CurrentScreen::LoadError => match mouse_event.kind {
-                MouseEventKind::Down(MouseButton::Left) => self.exit(),
+                // adding this was actually a bad idea, just q to quit is way better.
+                // MouseEventKind::Down(MouseButton::Left) => self.exit(),
                 _ => {}
             }
         }
