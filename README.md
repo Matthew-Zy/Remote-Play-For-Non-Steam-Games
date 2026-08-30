@@ -3,10 +3,10 @@ This small application lets you utilize steam's remote play feature with non ste
 
 ### Preview:
 
-<center>
+<div align="center">
     <img src="./images/preview.png" height="200">
     <img src="./images/preview2.png" height="200">
-</center>
+</div>
 
 
 ## Quick Setup Guide:
@@ -60,18 +60,12 @@ C:\tools\Dolphin\Dolphin.exe" -b -e "D:\Games\New Super Mario Bros. Wii (USA) (E
 - You may also use the `cli` interface instead of the default `tui` by adding `--cli` in the properties tab.
 
 
-<center>
-    <img src="./images/cli-option.png" alt="cli option" width="600">
-</center>
-<center>
-    <img src="./images/cli-preview.png" alt="cli preview" width="400">
-</center>
+<img src="./images/cli-option.png" alt="cli option" width="600">
+<img src="./images/cli-preview.png" alt="cli preview" width="400">
 
 
 - You may give it a custom conf file that takes priority over the two default conf files the application reads. You may add that by adding `-conf="CUSTOM_CONF_NAME.toml"`. It will determine which format to use if the file is suffixed with `.toml`.
 - Please wrap your custom file name in quotes & ensure the path is relative to the location of the executable. 
 
-<center>
-    <img src="./images/custom-conf.png" alt="custom conf option" width="600">
-</center>
+<img src="./images/custom-conf.png" alt="custom conf option" width="600">
 
