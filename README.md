@@ -10,8 +10,10 @@ An application that allows users to utilize steam's remote play feature with non
 ### Requirements:
 - Windows:
     - Windows Terminal (Installed by default on windows 11)
-- Linux & mac
+- Linux:
     - no support on linux because I haven't quite figured out how to get it working on that platform. Task for another time.
+    - Linux launches games a bit differently than windows does, with some changed environment variables and what not that I haven't been keen on figuring out.
+- Mac:
     - no support on mac because uhhh... yes....
 
 ## Quick Setup Guide:
