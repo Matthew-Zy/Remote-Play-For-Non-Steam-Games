@@ -1,6 +1,5 @@
-# Remote Play For Non Steam Games
-This small application lets you utilize steam's remote play feature with non steam games. 
-
+# Remote Play For Non Steam Games (RPFNSTG)
+An application that allows users to utilize steam's remote play feature with non-steam games.
 ### Preview:
 
 <div align="center">
@@ -8,6 +7,12 @@ This small application lets you utilize steam's remote play feature with non ste
     <img src="./images/preview2.png" height="200">
 </div>
 
+### Requirements:
+- Windows:
+    - Windows Terminal (Installed by default on windows 11)
+- Linux & mac
+    - no support on linux because I haven't quite figured out how to get it working on that platform. Task for another time.
+    - no support on mac because uhhh... yes....
 
 ## Quick Setup Guide:
 1. Compile this application or download the the precompiled binary in the [release](./releases) section.
@@ -23,23 +28,18 @@ This small application lets you utilize steam's remote play feature with non ste
 ### Example of `games.toml`
 - you may also refer to the example format in the [examples folder](./examples/example.toml)
 - remember that `#` are comments in `.toml`
-- path is the only field that is necessary, omitting arguments, env_variables, and name are fine. Note that the name field is just so the ui can display a game name instead of a path to an executable.
-- only games.toml will support environment variables, and `games.txt` will only supports path, name and arguments
+- path is the only field that is necessary. Note that the name field is just so the ui can display a game name instead of a path to an executable.
+- Note that you can technically inject custom environment variables with `env_variables` with the toml conf, although there isn't really a purpose of this (as of now).
 ```toml
 [[game]]
 path = '/home/user/.local/share/games/executable'
 arguments = ['--custom', '--game', '--flags']
-env_variables = [
-    ['STEAM_COMPAT_CLIENT_INSTALL_PATH', '/home/user/.local/share/Steam'],
-    ['STEAM_COMPAT_DATA_PATH', '/home/user/.local/share/Steam/steamapps/compatdata/custom_game_id']
-]
 name = 'Custom Game Name' 
 
 [[game]]
 # This is completely okay!
 path = 'C:\path\to\executable.exe'
 ```
-- For those on linux trying to run a game that requires proton, please read [this](./linux-guide.md) file for a guide.
 
 ### Example of `games.txt`
 - I would recommend using this format for the less tech-savvy
@@ -69,3 +69,15 @@ C:\tools\Dolphin\Dolphin.exe" -b -e "D:\Games\New Super Mario Bros. Wii (USA) (E
 
 <img src="./images/custom-conf.png" alt="custom conf option" width="600">
 
+# Compiling
+- Ensure you have rust toolchain installed
+- The compiled binary will be in `.\target\debug\remote-play.exe` or `.\target\release\remote-play.exe`.
+```bash
+cargo build
+
+# build release
+cargo build --release
+
+# run with cargo 
+cargo run
+```
