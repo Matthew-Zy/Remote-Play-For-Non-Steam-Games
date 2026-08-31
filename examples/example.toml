@@ -5,6 +5,7 @@ path = 'C:\tools\Dolphin\Dolphin.exe'
 arguments = ['-b', '-e', 'D:\Games\New Super Mario Bros. Wii (USA) (En,Fr,Es) (Rev 2).wbfs']
 name = 'New super mario bros wii'
 
+# also please avoid using tilde expansion (~)
 [[game]]
 path = 'C:\tools\Dolphin\Dolphin.exe'
 arguments = ['-b', '-e', 'D:\Games\Legend of Zelda, The - Twilight Princess (Europe, Australia) (En,Fr,De,Es,It).wbfs']
@@ -13,15 +14,3 @@ name = 'Legend of Zelda - Twilight Princess'
 [[game]]
 path = 'C:\path\to\executable.exe'
 name = 'Custom Game Name'
-
-# example running a game on linux with steam's proton
-# also please avoid using tilde expansion (~)
-[[game]]
-path = '/home/user/.local/share/Steam/steamapps/common/Proton 9.0/proton'
-# pass the game's executable through the arguments this time
-arguments = ['/path/to/your/non-steam-game/Game.exe']
-env_variables = [
-    ['STEAM_COMPAT_CLIENT_INSTALL_PATH', '/home/user/.local/share/Steam'],
-    ['STEAM_COMPAT_DATA_PATH', '/home/user/.local/share/Steam/steamapps/compatdata/custom_game_id']
-]
-name = 'Requires proton compatibility game'

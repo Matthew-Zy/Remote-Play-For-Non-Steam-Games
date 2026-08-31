@@ -15,15 +15,3 @@ toml = "0.8"
 
 [build-dependencies]
 winres = "0.1"
-
-
-[package.metadata.packager]
-name = "remote-play"
-product_name = "Remote Play For Non Steam Games"
-version = "0.1.0"
-identifier = ""
-icons = ["assets/icon.png"]
-authors = ["Matthew-Zy"]
-description = "Application to help use remote play with non steam games"
-
-[package.metadata.packager.appimage]
