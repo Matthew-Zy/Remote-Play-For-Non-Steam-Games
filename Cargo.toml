@@ -11,7 +11,10 @@ path = "src/main.rs"
 crossterm = "0.29.0"
 ratatui = "0.30.2"
 serde = { version = "1.0", features = ["derive"] }
+slint = "1.17.1"
 toml = "0.8"
 
 [build-dependencies]
 winres = "0.1"
+slint-build = "1.17.1"
+
