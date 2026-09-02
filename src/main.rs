@@ -1,11 +1,8 @@
 use std::env; 
 mod game_loader;
+mod slint_gui;
 mod tui;
 mod cli; 
-
-slint::include_modules!();
-use slint::{SharedString, ToSharedString};
-
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let use_cli = args.contains(&String::from("--cli"));
@@ -18,23 +15,10 @@ fn main() {
     if use_cli {
         cli::run_cli();
     } else if use_gui {
-        run_slint_gui();
+        slint_gui::run_slint_gui();
     }
     else {
         let _ = tui::run_tui();
     }
 }
 
-fn test() -> SharedString {
-    return "skibidi".to_shared_string();
-}
-
-fn run_slint_gui() {
-    
-    let gui = AppWindow::new().unwrap();
-
-    gui.on_test_function(test);
-
-
-    gui.run().unwrap();
-}

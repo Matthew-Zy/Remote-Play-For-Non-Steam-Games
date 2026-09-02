@@ -1,0 +1,39 @@
+import { GameInformation } from "datatypes.slint";
+
+import { Button } from "std-widgets.slint";
+
+
+
+export component GameTab inherits Rectangle {
+    in property <GameInformation> game_info;
+    preferred-width: 200px;
+    preferred-height: 100px;
+    
+    background: #ffffff;
+    
+    HorizontalLayout {
+        Rectangle { 
+            background: black; width: 30%; 
+            Text {
+                text: game_info.display_name;
+            }
+        
+        }
+        Rectangle { 
+            background: blue; width: 40%;
+
+            Text {
+
+            }
+        }
+        Rectangle {
+            background: blue; 
+            width: 30%;
+            Button {
+                width: 100%;
+                height: 100%;
+                text: "Launch";
+            }
+        }
+    }
+}

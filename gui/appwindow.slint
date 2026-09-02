@@ -1,5 +1,6 @@
 import { Button, VerticalBox } from "std-widgets.slint";
-
+import { LaunchStatus, GameInformation, GameInformationStatus } from "./datatypes.slint";
+import { GameTab } from "./gametab.slint";
 
 
 
@@ -7,11 +8,20 @@ import { Button, VerticalBox } from "std-widgets.slint";
 export component AppWindow inherits Window {
     title: "Remote Play Non Steam Games";
     icon: @image_url("../assets/icon.png");
+    default-font_size: 24px;
+
+    preferred-height: 600px;
+    preferred-width: 600px;
+
+    in property <[GameInformation]> game_informations;
+
+    callback fetch_games() -> GameInformationStatus;
 
     callback test_function() -> string;
+    callback test_struct_function() -> LaunchStatus;
 
     VerticalLayout {
-
+    
     
     test_label := Text {
         text: "sigma";
@@ -19,10 +29,42 @@ export component AppWindow inherits Window {
 
 
     Button {
+        property <bool> real: false;
+
         text: "Example button";
         clicked => {
-            test_label.text = root.test_function();
+            if real {
+                test_label.text = "im at the claub";
+            } else {
+                test_label.text = root.fetch_games().error;
+            }
+            real = !real;
         }
     }
+
+    Button {
+        text: "Launch status";
+        clicked => {
+            let x = test_struct_function();
+            if x.success {
+                self.text = "sucessfully launched";
+            } else {
+                self.text = "Error: " + x.error;
+            }
+        }
     }
+
+    in-out property <GameInformation> test_game: {
+        display_name: "sigma",
+        path: "skibidi",
+        args: []
+    };
+
+    GameTab {
+        game_info: test_game;
+    }
+
+    }
+
+    
 }

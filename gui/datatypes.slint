@@ -1,0 +1,16 @@
+export struct GameInformation {
+    display_name: string,
+    path: string,
+    args: [string],
+}
+
+export struct GameInformationStatus {
+    success: bool,
+    game_infos: [GameInformation],
+    error: string,
+}
+
+export struct LaunchStatus {
+    success: bool, 
+    error: string,
+}
