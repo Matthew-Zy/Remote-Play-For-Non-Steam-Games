@@ -13,9 +13,9 @@ export component AppWindow inherits Window {
     preferred-height: 600px;
     preferred-width: 600px;
 
-    in property <[GameInformation]> game_informations;
+    in property <GameInformationStatus> game_info;
 
-    callback fetch_games() -> GameInformationStatus;
+    callback launch_game(int) -> LaunchStatus;
 
     callback test_function() -> string;
     callback test_struct_function() -> LaunchStatus;
@@ -36,7 +36,7 @@ export component AppWindow inherits Window {
             if real {
                 test_label.text = "im at the claub";
             } else {
-                test_label.text = root.fetch_games().error;
+                test_label.text = root.test_function();
             }
             real = !real;
         }
@@ -60,11 +60,16 @@ export component AppWindow inherits Window {
         args: []
     };
 
-    GameTab {
-        game_info: test_game;
-    }
-
-    }
-
     
+
+    for g[i] in game_info.game_infos : GameTab {
+        index: i;
+        game_info: g;
+        launch_game => launch_game(i);
+    }
+
+
+
+
+    }
 }

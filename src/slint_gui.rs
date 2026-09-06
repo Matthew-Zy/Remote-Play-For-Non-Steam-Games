@@ -60,6 +60,12 @@ fn fetch_games() -> GameInformationStatus {
 
 }
 
+fn launch_game(x: i32) -> LaunchStatus {
+    match game_loader::spawn_game(&GAME_INFORMATIONS.get().unwrap()[x as usize]) {
+        Ok(_) => LaunchStatus{ success: true, error: "".into() },
+        Err(e) => LaunchStatus{ success: false, error: e.into() }
+    }
+}
 
 pub fn run_slint_gui() {
     
@@ -67,7 +73,6 @@ pub fn run_slint_gui() {
 
     gui.on_test_function(test);
 
-    gui.on_fetch_games(fetch_games);
 
     gui.on_test_struct_function(|| {
         LaunchStatus {
@@ -75,6 +80,12 @@ pub fn run_slint_gui() {
             error: SharedString::from("Totally real error message"),
         }
     });
+
+    let fetched_status = fetch_games();
+
+    gui.on_launch_game(launch_game);
+    gui.set_game_info(fetched_status);
+
 
 
     gui.run().unwrap();
