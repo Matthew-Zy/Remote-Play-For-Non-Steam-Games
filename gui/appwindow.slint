@@ -1,7 +1,7 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import { LaunchStatus, GameInformation, GameInformationStatus } from "./datatypes.slint";
 import { GameTab } from "./gametab.slint";
-
+import { ErrorWindow } from "./errorwindow.slint";
 
 
 
@@ -13,9 +13,10 @@ export component AppWindow inherits Window {
     preferred-height: 600px;
     preferred-width: 600px;
 
-    in property <GameInformationStatus> game_info;
+    in property <[GameInformation]> game_infos;
 
     callback launch_game(int) -> LaunchStatus;
+    callback open_error_window();
 
     callback test_function() -> string;
     callback test_struct_function() -> LaunchStatus;
@@ -62,14 +63,10 @@ export component AppWindow inherits Window {
 
     
 
-    for g[i] in game_info.game_infos : GameTab {
+    for g[i] in game_infos : GameTab {
         index: i;
         game_info: g;
         launch_game => launch_game(i);
     }
-
-
-
-
     }
 }
