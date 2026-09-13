@@ -1,10 +1,7 @@
 use crate::game_loader::{self, GameInfo};
-use std::sync::OnceLock;
 use std::sync::{Arc, Mutex};
 slint::include_modules!();
 use slint::{Model, ModelRc, SharedString, ToSharedString};
-
-static GAME_INFORMATIONS: OnceLock<Vec<GameInfo>> = OnceLock::new();
 
 impl From<&GameInfo> for GameInformation {
     fn from(game: &GameInfo) -> Self {
@@ -24,6 +21,7 @@ impl From<&GameInfo> for GameInformation {
 
 struct GuiSlint {
     gui: AppWindow,
+    error_window: ErrorWindow,
     games: Arc<Mutex<Vec<GameInfo>>>,
 }
 
@@ -31,6 +29,7 @@ impl Default for GuiSlint {
     fn default() -> Self {
         Self {
             gui: AppWindow::new().unwrap(),
+            error_window: ErrorWindow::new().unwrap(),
             games: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -38,9 +37,26 @@ impl Default for GuiSlint {
 
 // todo: make all methods implementations of a struct for better state control
 impl GuiSlint {
-    pub fn run_slint_gui(&self) {
-        self.gui.run().unwrap();
+    pub fn new() -> Self {
+        let gui = AppWindow::new().unwrap();
+        // this ensures that the main app window appears before any error windows.
+        gui.show().unwrap();
+
+
+        
+        
+        Self {
+            gui: gui, 
+            error_window: ErrorWindow::new().unwrap(),
+            games: Arc::new(Mutex::new(Vec::new())),
+        }
     }
+
+
+    pub fn run(&self) {
+        slint::run_event_loop().unwrap();
+    }
+
 
     fn set_games(&mut self) {
         match game_loader::parse_games() {
@@ -49,10 +65,11 @@ impl GuiSlint {
                 self.gui.set_game_infos(ModelRc::new(slint::VecModel::from(slint_games)));
             }
             Err(e) => {
-                open_error_window(e);
+                self.open_error_window(e);
             }
         }
     }
+
 
     pub fn update_and_read(&self, new_games: Vec<GameInfo>) -> Vec<GameInformation> {
         let mut games_ref = self.games.lock().unwrap();
@@ -74,27 +91,18 @@ impl GuiSlint {
             println!("Launching game from struct state!");
             match game_loader::spawn_game(game) {
                 Ok(_) => {},
-                Err(e) => {},
+                Err(e) => {
+                    self.open_error_window(e)
+                },
             }
         } else {
             
         }
     }
-}
-fn test() -> SharedString {
-    return "skibidi".to_shared_string();
-}
 
-fn launch_game(x: i32) -> LaunchStatus {
-    match game_loader::spawn_game(&GAME_INFORMATIONS.get().unwrap()[x as usize]) {
-        Ok(_) => LaunchStatus {
-            success: true,
-            error: "".into(),
-        },
-        Err(e) => LaunchStatus {
-            success: false,
-            error: e.into(),
-        },
+    fn open_error_window(&self, e: String) {
+        // todo: unfuck this
+        open_error_window(e);
     }
 }
 
@@ -104,36 +112,26 @@ fn open_error_window(e: String) {
     let _ = error_window.show();
 }
 
-fn set_games(app: &AppWindow) {
-    match game_loader::parse_games() {
-        Ok(games) => {
-            let slint_games: Vec<GameInformation> = games.iter().map(GameInformation::from).collect();
-            app.set_game_infos(ModelRc::new(slint::VecModel::from(slint_games)));
-        }
-        Err(e) => {
-            open_error_window(e);
-        }
-    }
-}
 
 pub fn run_slint_gui() {
-    let gui = AppWindow::new().unwrap();
+    let mut app = GuiSlint::new();
+    app.set_games();
 
-    let _ = gui.show();
-    
+    let weak_gui = app.gui.as_weak();
 
-    gui.on_launch_game(launch_game);
+    app.gui.on_launch_game(move |x: i32| {
+        let binding = app.games.clone();
+        let games = binding.lock().unwrap();
+
+
+    });
 
     {
-        // test junk stuff yeah
-        gui.on_test_function(test);
-
-        gui.on_test_struct_function(|| LaunchStatus {
-            success: false,
-            error: SharedString::from("Totally real error message"),
-        });
+        app.gui.on_test_function(|| {"Test".into()});
     }
-    // gui.set_game_info(fetched_status);
-    set_games(&gui);
-    slint::run_event_loop().unwrap();
+
+
+
+    app.run();
 }
+

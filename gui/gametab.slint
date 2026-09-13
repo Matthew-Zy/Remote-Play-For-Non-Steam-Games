@@ -6,7 +6,7 @@ import { Button } from "std-widgets.slint";
 export component GameTab inherits Rectangle {
     in property <int> index;
     in property <GameInformation> game_info;
-    callback launch_game(int) -> LaunchStatus;
+    callback launch_game(int);
     preferred-width: 600px;
     preferred-height: 300px;
     min-width: 400px;

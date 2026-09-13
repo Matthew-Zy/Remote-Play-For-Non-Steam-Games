@@ -15,7 +15,7 @@ export component AppWindow inherits Window {
 
     in property <[GameInformation]> game_infos;
 
-    callback launch_game(int) -> LaunchStatus;
+    callback launch_game(int);
     callback open_error_window();
 
     callback test_function() -> string;
